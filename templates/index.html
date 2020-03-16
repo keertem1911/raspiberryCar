@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>遥控树莓派</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <script src="/static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=N9sye2GzSLFIxDHnyDl5cMsvpe7gcS8P"></script>
+
+    <style type="text/css">
+        #btn_87 {
+            margin-left: 55px;
+            margin-bottom: 3px;
+        }
+        #btn_68{
+            margin-top: 3px;
+            margin-left: 55px;
+        }
+        .btn{
+             background: #62559f;
+            }
+         /*设置容器样式*/
+		    #container {
+		    	height: 100%;
+		    }
+    </style>
+    <script>
+
+        $(function() {
+              var imageNr = 0; // Serial number of current image
+              var finished = new Array(); // References to img objects which have finished downloading
+              var paused = false;
+              var previous_time = new Date();
+              var fNi = 0, msAvg = 0, fpsAvg = 0, fcnt = 0, fN = 80, msa = [], wsize = 4;
+              var prefix="/car",url="http://wangchuanxin.uicp.top:10279";
+
+            function runningAvgs(delta) {
+                // delta is the measured frame period
+                var len;
+                if (fcnt < fN) {
+
+                    fcnt++;
+                    // we need to populate the sample array
+                    msa.push(delta);
+                    // calculate average period so far
+                    msAvg += (delta - msAvg) / fcnt;
+
+                } else {
+                    /*
+                        running average (fN samples) according to the formula:
+                        rAvg = rAvg - value_fN_samples_back / fN + newest_value / fN
+                    */
+                    msAvg += (delta - msa[0])/fN;
+                    // drop oldest ms value, msa[0]
+                    msa = msa.slice(1);
+                    // append newest value, delta
+                    msa.push(delta);
+                }
+                // calculate average fps
+                fpsAvg = 1000 / msAvg;
+                /*
+                    once every fN frames, check if we need to adjust the averaging window
+                    since faster rates seem to need more samples to reach a stable(er) readout
+                */
+                if (++fNi == fN) {
+
+                    fNi = 0;
+                    // new window size
+                    fN = parseInt(fpsAvg * wsize);
+                    len = fcnt - fN;
+                    // if our sample array, msa, has extra samples, then trim it to the new size
+                    if (len > 0) {
+
+                        // adjust averaging window (nr of samples)
+                        msa = msa.splice(len);
+                        // avoid populating the sample array again
+                        fcnt = fN;
+                    }
+                }
+            }
+            // Two layers are always present (except at the very beginning), to avoid flicker
+            function imageOnload() {
+                this.style.zIndex = imageNr; // Image finished, bring to front!
+                while (1 < finished.length) {
+                  var del = finished.shift(); // Delete old image(s) from document
+                  del.parentNode.removeChild(del);
+                }
+                finished.push(this);
+                current_time = new Date();
+                delta = current_time.getTime() - previous_time.getTime();
+                fps   = (1000.0 / delta).toFixed(1);
+                runningAvgs(delta);
+                info.nodeValue = delta + " ms (" + fps + " fps)";
+                ravgFps.nodeValue = fpsAvg.toFixed(1);
+                ravgMs.nodeValue = msAvg.toFixed(0);
+                previous_time = current_time;
+                if (!paused) createImageLayer();
+            }
+             function imageOnclick() { // Clicking on the image will pause the stream
+                paused = !paused;
+                if (!paused) createImageLayer();
+              }
+            $("button").click(function () {
+                var id=this.id.split("_")[1];
+                $.get(prefix+"/controller/"+id, function (data, status) {
+                });
+            });
+            function createImageLayer() {
+                  var img = new Image();
+            img.style.position = "absolute";
+            img.style.zIndex = -1;
+            img.onload = imageOnload;
+            img.onclick = imageOnclick;
+            img.width = 512;
+            img.height = 384;
+            img.src = url+"/?action=snapshot&n=" + (++imageNr);
+            var webcam = document.getElementById("webcam");
+            window.info = document.getElementById('info').firstChild;
+            window.ravgFps = document.getElementById('ravgfps').firstChild;
+            window.ravgMs = document.getElementById('ravgms').firstChild;
+            webcam.insertBefore(img, webcam.firstChild);
+            document.getElementById('fN').firstChild.nodeValue = fN;
+            }
+            window.onload=createImageLayer();
+            $(window).keydown(function(e) {
+                var code=e.keyCode;
+                switch (e.keyCode) {
+                    case 87:
+                        code=87;
+                        console.log('w');
+                        break;
+                    case 83:
+                        console.log('s');
+                        break;
+                    case 65:
+                        console.log('a');
+                        break;
+                    case 68:
+                        console.log('d');
+                        break;
+                    case 32:
+                        console.log('空格停车');
+                        break;
+                    case 16:
+                        console.log('加速');
+                        break;
+                    case 90:
+                        console.log('z左后转');
+                        break;
+                    case 67:
+                        console.log('c右后转');
+                        break;
+                    case 81:
+                        console.log('q左前转');
+                        break;
+                    case 69:
+                        console.log('e右前转');
+                        break;
+                    case 38:
+                        console.log('方向键上');
+                        break;
+                    case 40:
+                        console.log('方向键下');
+                        break;
+                    case 37:
+                        console.log('方向键左');
+                        break;
+                    case 39:
+                        console.log('方向键右');
+                        break;
+                    case 82:
+                        console.log('r拍照');
+                        break;
+                    case 84:
+                        console.log('t录制视频');
+                        break;
+
+
+                }
+                 $.get(prefix+"/controller/"+code, function (data, status) {
+                     if(data.msg){
+                        $('#info').html(data.msg)
+                     }
+                });
+            });
+            function createBaiDuMap() {
+                //创建地址实例
+                var map = new BMap.Map("container");
+            //设置中心的坐标
+                var point = new BMap.Point();
+                //初始化地图页面，设置中心点坐标和地图级别
+                map.centerAndZoom(point, 15);
+                //开启鼠标滚轮缩放地图
+                map.enableScrollWheelZoom(true);
+
+                //添加控件
+                //缩略地图OverviewMapControl，默认位于地图右下方，是一个可折叠的缩略地图
+                map.addControl(new BMap.OverviewMapControl());
+                //地图类型MapTypeControl, 默认位于地图右上方
+                map.addControl(new BMap.MapTypeControl());
+                //平移缩放控件 NavigationControl	, PC端默认位于地图左上方，它包含控制地图的平移和缩放的功能。移动端提供缩放控件，默认位于地图右下方
+                map.addControl(new BMap.NavigationControl());
+                //比例尺ScaleControl, 默认位于地图左下方，显示地图的比例关系
+                //map.addControl(new BMap.ScaleControl());
+                //设置控件位置偏移，x,y轴
+                var opts = {offset: new BMap.Size(90, 30)}
+                map.addControl(new BMap.ScaleControl(opts));
+
+                //根据浏览器定位，之后显示当前位置
+                //var geolocation = new BMap.Geolocation();//
+              /*  geolocation.getCurrentPosition(function(r){
+                    if(this.getStatus() == BMAP_STATUS_SUCCESS){
+                      //  var mk = new BMap.Marker(r.point);
+                     //   map.addOverlay(mk);
+                    //    map.panTo(r.point);
+                        var latCurrent = r.point.lat;
+                        var lngCurrent = r.point.lng;
+                        $("#lat").html(latCurrent);
+                        $("#lng").html(lngCurrent);
+                        console.log('您的位置：'+r.point.lng+','+r.point.lat);
+                        map.clearOverlays();
+                        var new_point = new BMap.Point(lngCurrent,latCurrent);
+                        var marker = new BMap.Marker(new_point);  // 创建标注
+                        map.addOverlay(marker);              // 将标注添加到地图中
+                        map.panTo(new_point);
+                        //设置导航终点，起始位置到终点位置
+                    }
+                    else {
+                        alert('failed'+this.getStatus());
+                    }
+                });*/
+            }
+            createBaiDuMap()
+        })
+
+
+    </script>
+</head>
+<body   >
+<div   class="container">
+
+    <div>
+        <div>
+            <button id="btn_87" class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-up"></button>
+        </div>
+        <div>
+
+            <button id='btn_65' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-left"></button>
+            <button id='btn_32' class="btn btn-lg btn-primary glyphicon glyphicon-stop"></button>
+            <button id='btn_68' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-right"></button>
+        </div>
+        <div>
+            <button id='btn_83' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-down"></button>
+        </div>
+         <!--<div>
+            <button id='btn_6' class="btn btn-lg btn-primary glyphicon">左后转</button>
+            <button id='btn_7' class="btn btn-lg btn-primary glyphicon">右后转</button>
+        </div>-->
+    </div>
+     <h3>Runtime info:</h3>
+      <p><span id="info">-</span><br/>
+      Avg<sub id="fN">-</sub> : <span  id="ravgms">-</span> ms (<span  id="ravgfps">-</span> fps)
+
+      </p>
+        <div class="row">
+        <div class="col-md-8">
+            <div id="webcam" style="margin-top:80px;width:512px;height:394px;"><noscript><img src="?action=snapshot" width="512px" height="384px" /></noscript></div>
+        </div>
+        <div class="col-md-4">
+             <p>经度<span id="lng">-</span>纬度<span id="lat">-</span><br/>
+            <div id="container" style="margin-top:80px;width:580px;height:450px;"></div>
+        </div>
+        </div>
+</div>
+<script src="/static/js/bootstrap.min.js"></script>
+</body>
+</html>
