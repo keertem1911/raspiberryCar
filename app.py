@@ -6,12 +6,19 @@ import sys,time
 from threading import Thread
 import numpy as  np
 import pygame
+
+"""
+引入gpio包
+"""
+import RPi.GPIO as GPIO
+
 app=Flask(__name__)
 
 auth=HTTPBasicAuth()
 host = "wangchuanxin.uicp.top:10279"
 hoststr = 'http://' + host + '/?action=snapshot'
 thread=None
+car=None
 @auth.get_password
 def authPasswd(username):
     if username=='keerte':
@@ -142,6 +149,8 @@ def controllerDist(dist):
         turnRightForward()
     elif dist == 16 :
         speedUp()
+    elif dist == 20 :
+        speedDown()
     elif dist == 38:
         upCamera()
     elif dist == 40:
@@ -180,33 +189,203 @@ def leftCamera():
     print('leftCamera')
 def rightCamera():
     print('rightCamera')
-def speedUp(value=10):
-    print('speed',value)
+def speedUp():
+    if car is not None:
+        car.speedUp()
+        return 'success'
+    return 'not init car'
+def speedDown():
+    if car is not None:
+        car.speedDown()
+        return 'success'
+    return 'not init car'
+
 def forward():
+    if car is not None:
+        car.run()
+        return "success"
     print("forward")
+    return "not init car"
 def turnLeft():
+    if car is not None:
+        car.left()
+        return "success"
     print("turn left")
+    return "not init car"
 def turnRight():
+    if car is not None:
+        car.right()
+        return "success"
     print("turn right")
+    return "not init car"
 def turnBack():
+    if car is not None:
+        car.back()
+        return "success"
     print("turn back")
+    return "not init car"
 def turnStop():
+    if car is not None:
+        car.brake()
+        return 'success'
     print("turn stop")
+    return 'not init car'
 def turnLeftBack():
     print("turn left back")
 def turnRightBack():
     print("turn right back")
 def turnLeftForward():
+    if car is not None:
+        car.spin_left()
+        return "success"
     print("turn left Forward")
+    return 'not init car'
 def turnRightForward():
+    if car is not None:
+        car.spin_right()
+        return "success"
     print("turn right Forward")
+    return 'not init car'
 @app.route('/index')
 @auth.login_required
 def home():
     return send_file("templates/index.html")
 
+
+
+
+"""
+GPIO控制端
+"""
+#状态值定义
+enSTOP = 0
+enRUN =1
+enBACK = 2
+enLEFT = 3
+enRIGHT = 4
+enTLEFT =5
+enTRIGHT = 6
+
+
+#小车电机引脚定义
+IN1 = 20
+IN2 = 21
+IN3 = 19
+IN4 = 26
+ENA = 16
+ENB = 13
+"""
+小车方向控制函数
+"""
+
+CarSpeedControl=50
+class CarController:
+    def __init__(self):
+        # 设置GPIO口为BCM编码方式
+        GPIO.setmode(GPIO.BCM)
+
+        # 忽略警告信息
+        GPIO.setwarnings(False)
+        global pwm_ENA
+        global pwm_ENB
+        # 初始化速度
+        self.CarSpeedControl=50
+        """
+        初始化小车控制
+        """
+        GPIO.setup(ENA, GPIO.OUT, initial=GPIO.HIGH)
+        GPIO.setup(IN1, GPIO.OUT, initial=GPIO.LOW)
+        GPIO.setup(IN2, GPIO.OUT, initial=GPIO.LOW)
+        GPIO.setup(ENB, GPIO.OUT, initial=GPIO.HIGH)
+        GPIO.setup(IN3, GPIO.OUT, initial=GPIO.LOW)
+        GPIO.setup(IN4, GPIO.OUT, initial=GPIO.LOW)
+        # 设置pwm引脚和频率为2000hz
+        pwm_ENA = GPIO.PWM(ENA, 2000)
+        pwm_ENB = GPIO.PWM(ENB, 2000)
+        pwm_ENA.start(0)
+        pwm_ENB.start(0)
+
+        """
+        初始化小车控制结束
+        """
+# 小车前进
+    def run(self):
+        GPIO.output(IN1, GPIO.HIGH)
+        GPIO.output(IN2, GPIO.LOW)
+        GPIO.output(IN3, GPIO.HIGH)
+        GPIO.output(IN4, GPIO.LOW)
+        pwm_ENA.ChangeDutyCycle(CarSpeedControl)
+        pwm_ENB.ChangeDutyCycle(CarSpeedControl)
+
+    # 小车后退
+    def back(self):
+        GPIO.output(IN1, GPIO.LOW)
+        GPIO.output(IN2, GPIO.HIGH)
+        GPIO.output(IN3, GPIO.LOW)
+        GPIO.output(IN4, GPIO.HIGH)
+        pwm_ENA.ChangeDutyCycle(CarSpeedControl)
+        pwm_ENB.ChangeDutyCycle(CarSpeedControl)
+
+    # 小车左转
+    def left(self):
+        GPIO.output(IN1, GPIO.LOW)
+        GPIO.output(IN2, GPIO.LOW)
+        GPIO.output(IN3, GPIO.HIGH)
+        GPIO.output(IN4, GPIO.LOW)
+        pwm_ENA.ChangeDutyCycle(CarSpeedControl)
+        pwm_ENB.ChangeDutyCycle(CarSpeedControl)
+
+    # 小车右转
+    def right(self):
+        GPIO.output(IN1, GPIO.HIGH)
+        GPIO.output(IN2, GPIO.LOW)
+        GPIO.output(IN3, GPIO.LOW)
+        GPIO.output(IN4, GPIO.LOW)
+        pwm_ENA.ChangeDutyCycle(CarSpeedControl)
+        pwm_ENB.ChangeDutyCycle(CarSpeedControl)
+
+    # 小车原地左转
+    def spin_left(self):
+        GPIO.output(IN1, GPIO.LOW)
+        GPIO.output(IN2, GPIO.HIGH)
+        GPIO.output(IN3, GPIO.HIGH)
+        GPIO.output(IN4, GPIO.LOW)
+        pwm_ENA.ChangeDutyCycle(CarSpeedControl)
+        pwm_ENB.ChangeDutyCycle(CarSpeedControl)
+
+    # 小车原地右转
+    def spin_right(self):
+        GPIO.output(IN1, GPIO.HIGH)
+        GPIO.output(IN2, GPIO.LOW)
+        GPIO.output(IN3, GPIO.LOW)
+        GPIO.output(IN4, GPIO.HIGH)
+        pwm_ENA.ChangeDutyCycle(CarSpeedControl)
+        pwm_ENB.ChangeDutyCycle(CarSpeedControl)
+    # 小车停止
+    def brake(self):
+        GPIO.output(IN1, GPIO.LOW)
+        GPIO.output(IN2, GPIO.LOW)
+        GPIO.output(IN3, GPIO.LOW)
+        GPIO.output(IN4, GPIO.LOW)
+    #加速
+    def speedUp(self):
+        self.CarSpeedControl += 20
+        if self.CarSpeedControl>=100:
+            self.CarSpeedControl=100
+    #减速
+    def speedDown(self):
+        self.CarSpeedControl -= 20
+        if self.CarSpeedControl <=20:
+            self.CarSpeedControl = 20
+    def getSpeed(self):
+        return self.CarSpeedControl
+"""
+小车方向控制函数
+"""
+
 if __name__ == '__main__':
     thread = saveVideoClass(hoststr)
+    car= CarSpeedControl
     app.run(
         host="localhost",
         port=8081,
