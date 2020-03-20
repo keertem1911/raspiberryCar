@@ -181,14 +181,31 @@ def takePicture():
     print()
 def upCamera():
     print('upCamera')
-
+    if car is not None:
+        car.servo_up()
+        return 'success'
+    return 'not init car'
 def downCamera():
     print('downCamera')
+    if car is not None:
+        car.servo_down()
+        return 'success'
+    return 'not init car'
 
 def leftCamera():
     print('leftCamera')
+    if car is not None:
+        car.servo_left()
+        return 'success'
+    return 'not init car'
+
 def rightCamera():
     print('rightCamera')
+    if car is not None:
+        car.servo_right()
+        return 'success'
+    return 'not init car'
+
 def speedUp():
     if car is not None:
         car.speedUp()
@@ -277,13 +294,20 @@ ENB = 13
 """
 小车方向控制函数
 """
+#舵机引脚定义
+ServoUpDownPin = 9
+ServoLeftRightPin = 11
+
+#蜂鸣器引脚定义
+buzzer = 8
 
 CarSpeedControl=50
 class CarController:
     def __init__(self):
         # 设置GPIO口为BCM编码方式
         GPIO.setmode(GPIO.BCM)
-
+        global pwm_UpDownServo
+        global pwm_LeftRightServo
         # 忽略警告信息
         GPIO.setwarnings(False)
         global pwm_ENA
@@ -302,8 +326,12 @@ class CarController:
         # 设置pwm引脚和频率为2000hz
         pwm_ENA = GPIO.PWM(ENA, 2000)
         pwm_ENB = GPIO.PWM(ENB, 2000)
+        pwm_UpDownServo = GPIO.PWM(ServoUpDownPin, 50)
+        self.pwm_LeftRightServo = GPIO.PWM(ServoLeftRightPin, 50)
         pwm_ENA.start(0)
         pwm_ENB.start(0)
+        pwm_UpDownServo.start(0)
+        pwm_LeftRightServo.start(0)
 
         """
         初始化小车控制结束
@@ -379,9 +407,94 @@ class CarController:
             self.CarSpeedControl = 20
     def getSpeed(self):
         return self.CarSpeedControl
+    # 摄像头舵机左右旋转到指定角度
+    def leftrightservo_appointed_detection(self,pos):
+        for i in range(1):
+            pwm_LeftRightServo.ChangeDutyCycle(2.5 + 10 * pos / 180)
+            time.sleep(0.02)  # 等待20ms周期结束
+            # pwm_LeftRightServo.ChangeDutyCycle(0)	#归零信号
+
+    # 摄像头舵机上下旋转到指定角度
+    def updownservo_appointed_detection(self,pos):
+        for i in range(1):
+            pwm_UpDownServo.ChangeDutyCycle(2.5 + 10 * pos / 180)
+            time.sleep(0.02)  # 等待20ms周期结束
+            # pwm_UpDownServo.ChangeDutyCycle(0)	#归零信号
+    # 小车鸣笛
+    def whistle(self):
+        GPIO.output(buzzer, GPIO.LOW)
+        time.sleep(0.1)
+        GPIO.output(buzzer, GPIO.HIGH)
+        time.sleep(0.001)
+    # 摄像头舵机向上运动
+    def servo_up(self):
+        global ServoUpDownPos
+        pos = ServoUpDownPos
+        self.updownservo_appointed_detection(pos)
+        # time.sleep(0.05)
+        pos += 0.7
+        ServoUpDownPos = pos
+        if ServoUpDownPos >= 180:
+            ServoUpDownPos = 180
+    # 摄像头舵机向下运动
+    def servo_down(self):
+        global ServoUpDownPos
+        pos = ServoUpDownPos
+        self.updownservo_appointed_detection(pos)
+        # time.sleep(0.05)
+        pos -= 0.7
+        ServoUpDownPos = pos
+        if ServoUpDownPos <= 45:
+            ServoUpDownPos = 45
+    # 摄像头舵机向左运动
+    def servo_left(self):
+        global ServoLeftRightPos
+        pos = ServoLeftRightPos
+        self.leftrightservo_appointed_detection(pos)
+        # time.sleep(0.10)
+        pos += 0.7
+        ServoLeftRightPos = pos
+        if ServoLeftRightPos >= 180:
+            ServoLeftRightPos = 180
+    # 摄像头舵机向右运动
+    def servo_right(self):
+        global ServoLeftRightPos
+        pos = ServoLeftRightPos
+        self.leftrightservo_appointed_detection(pos)
+        # time.sleep(0.10)
+        pos -= 0.7
+        ServoLeftRightPos = pos
+        if ServoLeftRightPos <= 0:
+            ServoLeftRightPos = 0
+    # 前舵机向左
+    def front_servo_left(self):
+        self.frontservo_appointed_detection(180)
+    # 前舵机向右
+    def front_servo_right(self):
+        self.frontservo_appointed_detection(0)
+    # 所有舵机归位
+    def servo_init(self):
+        servoflag = 0
+        servoinitpos = 90
+        if servoflag != servoinitpos:
+            self.updownservo_appointed_detection(servoinitpos)
+            self.leftrightservo_appointed_detection(servoinitpos)
+            time.sleep(0.5)
+            pwm_LeftRightServo.ChangeDutyCycle(0)  # 归零信号
+            pwm_UpDownServo.ChangeDutyCycle(0)  # 归零信号
+    # 摄像头舵机上下归位
+    def servo_updown_init(self):
+        self.updownservo_appointed_detection(90)
+    # 舵机停止
+    def servo_stop(self):
+        pwm_LeftRightServo.ChangeDutyCycle(0)  # 归零信号
+        pwm_UpDownServo.ChangeDutyCycle(0)  # 归零信号
+
+
 """
 小车方向控制函数
 """
+"""二度云台控制"""
 
 if __name__ == '__main__':
     thread = saveVideoClass(hoststr)
