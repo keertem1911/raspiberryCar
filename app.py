@@ -15,7 +15,7 @@ import RPi.GPIO as GPIO
 app=Flask(__name__)
 
 auth=HTTPBasicAuth()
-host = "wangchuanxin.uicp.top:10279"
+host = "192.168.3.12"
 hoststr = 'http://' + host + '/?action=snapshot'
 thread=None
 car=None
@@ -300,12 +300,12 @@ ENB = 13
 ServoUpDownPin = 9
 ServoLeftRightPin = 11
 
-ServoLeftRightPos = 90
-ServoUpDownPos = 90
+ServoLeftRightPos = 0
+ServoUpDownPos = 0
 #蜂鸣器引脚定义
 buzzer = 8
 
-CarSpeedControl=50
+CarSpeedControl=10
 class CarController:
     def __init__(self):
         # 设置GPIO口为BCM编码方式
@@ -317,7 +317,7 @@ class CarController:
         global pwm_ENA
         global pwm_ENB
         # 初始化速度
-        self.CarSpeedControl=50
+        self.CarSpeedControl=10
         """
         初始化小车控制
         """
@@ -327,11 +327,14 @@ class CarController:
         GPIO.setup(ENB, GPIO.OUT, initial=GPIO.HIGH)
         GPIO.setup(IN3, GPIO.OUT, initial=GPIO.LOW)
         GPIO.setup(IN4, GPIO.OUT, initial=GPIO.LOW)
+        GPIO.setup(ServoUpDownPin, GPIO.OUT)
+        GPIO.setup(ServoLeftRightPin, GPIO.OUT)
+        GPIO.setup(buzzer,GPIO.OUT,initial=GPIO.HIGH)
         # 设置pwm引脚和频率为2000hz
         pwm_ENA = GPIO.PWM(ENA, 2000)
         pwm_ENB = GPIO.PWM(ENB, 2000)
         pwm_UpDownServo = GPIO.PWM(ServoUpDownPin, 50)
-        self.pwm_LeftRightServo = GPIO.PWM(ServoLeftRightPin, 50)
+        pwm_LeftRightServo = GPIO.PWM(ServoLeftRightPin, 50)
         pwm_ENA.start(0)
         pwm_ENB.start(0)
         pwm_UpDownServo.start(0)
@@ -349,7 +352,7 @@ class CarController:
         pwm_ENA.ChangeDutyCycle(CarSpeedControl)
         pwm_ENB.ChangeDutyCycle(CarSpeedControl)
         time.sleep(1)
-
+		 
     # 小车后退
     def back(self):
         GPIO.output(IN1, GPIO.LOW)
@@ -368,7 +371,11 @@ class CarController:
         GPIO.output(IN4, GPIO.LOW)
         pwm_ENA.ChangeDutyCycle(CarSpeedControl)
         pwm_ENB.ChangeDutyCycle(CarSpeedControl)
-        time.sleep(2)
+        time.sleep(1)
+		GPIO.output(IN1, GPIO.LOW)
+        GPIO.output(IN2, GPIO.LOW)
+        GPIO.output(IN3, GPIO.LOW)
+        GPIO.output(IN4, GPIO.LOW)
     # 小车右转
     def right(self):
         GPIO.output(IN1, GPIO.HIGH)
@@ -378,6 +385,10 @@ class CarController:
         pwm_ENA.ChangeDutyCycle(CarSpeedControl)
         pwm_ENB.ChangeDutyCycle(CarSpeedControl)
         time.sleep(2)
+		GPIO.output(IN1, GPIO.LOW)
+        GPIO.output(IN2, GPIO.LOW)
+        GPIO.output(IN3, GPIO.LOW)
+        GPIO.output(IN4, GPIO.LOW)
     # 小车原地左转
     def spin_left(self):
         GPIO.output(IN1, GPIO.LOW)
@@ -415,17 +426,15 @@ class CarController:
         return self.CarSpeedControl
     # 摄像头舵机左右旋转到指定角度
     def leftrightservo_appointed_detection(self,pos):
-        for i in range(1):
-            pwm_LeftRightServo.ChangeDutyCycle(2.5 + 10 * pos / 180)
-            time.sleep(0.02)  # 等待20ms周期结束
-            # pwm_LeftRightServo.ChangeDutyCycle(0)	#归零信号
+        pwm_LeftRightServo.ChangeDutyCycle(2.5 + 10 * pos / 180)
+        time.sleep(0.02)  # 等待20ms周期结束
+        pwm_LeftRightServo.ChangeDutyCycle(0)	#归零信号
 
     # 摄像头舵机上下旋转到指定角度
     def updownservo_appointed_detection(self,pos):
-        for i in range(1):
-            pwm_UpDownServo.ChangeDutyCycle(2.5 + 10 * pos / 180)
-            time.sleep(0.02)  # 等待20ms周期结束
-            # pwm_UpDownServo.ChangeDutyCycle(0)	#归零信号
+        pwm_UpDownServo.ChangeDutyCycle(2.5 + 10 * pos / 180)
+        time.sleep(0.02)  # 等待20ms周期结束
+        pwm_UpDownServo.ChangeDutyCycle(0)	#归零信号
     # 小车鸣笛
     def whistle(self):
         GPIO.output(buzzer, GPIO.LOW)
@@ -504,9 +513,9 @@ class CarController:
 
 if __name__ == '__main__':
     thread = saveVideoClass(hoststr)
-    car= CarSpeedControl
+    car= CarController()
     app.run(
-        host="localhost",
+        host="192.168.3.12",
         port=8081,
         debug=False
     )
