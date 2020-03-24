@@ -248,10 +248,10 @@ def Distance_test():
     GPIO.output(TrigPin,GPIO.LOW)
     while not GPIO.input(EchoPin):
         pass
-        t1 = time.time()
+    t1 = time.time()
     while GPIO.input(EchoPin):
         pass
-        t2 = time.time()
+    t2 = time.time()
     print "distance is %d " % (((t2 - t1)* 340 / 2) * 100)
     time.sleep(0.01)
     return ((t2 - t1)* 340 / 2) * 100

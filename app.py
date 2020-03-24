@@ -2,7 +2,7 @@
 from flask import *
 from flask_httpauth import HTTPBasicAuth
 import os,cv2,urllib.request
-import sys,time
+import time
 from threading import Thread
 import numpy as  np
 import pygame
@@ -158,11 +158,13 @@ def controllerDist(dist):
     elif dist == 37 :
         leftCamera()
     elif dist == 39 :
-        downCamera()
+        rightCamera()
     elif dist == 82 :
         response=downLoadPic()
     elif dist == 84:
         response=saveRecordVideo()
+    elif dist ==70: #f
+        car.whistle()
     return jsonify({'msg':response})
 def saveRecordVideo():
     state= thread.getState()
@@ -298,6 +300,8 @@ ENB = 13
 ServoUpDownPin = 9
 ServoLeftRightPin = 11
 
+ServoLeftRightPos = 90
+ServoUpDownPos = 90
 #蜂鸣器引脚定义
 buzzer = 8
 
@@ -344,6 +348,7 @@ class CarController:
         GPIO.output(IN4, GPIO.LOW)
         pwm_ENA.ChangeDutyCycle(CarSpeedControl)
         pwm_ENB.ChangeDutyCycle(CarSpeedControl)
+        time.sleep(1)
 
     # 小车后退
     def back(self):
@@ -353,6 +358,7 @@ class CarController:
         GPIO.output(IN4, GPIO.HIGH)
         pwm_ENA.ChangeDutyCycle(CarSpeedControl)
         pwm_ENB.ChangeDutyCycle(CarSpeedControl)
+        time.sleep(1)
 
     # 小车左转
     def left(self):
@@ -362,7 +368,7 @@ class CarController:
         GPIO.output(IN4, GPIO.LOW)
         pwm_ENA.ChangeDutyCycle(CarSpeedControl)
         pwm_ENB.ChangeDutyCycle(CarSpeedControl)
-
+        time.sleep(2)
     # 小车右转
     def right(self):
         GPIO.output(IN1, GPIO.HIGH)
@@ -371,7 +377,7 @@ class CarController:
         GPIO.output(IN4, GPIO.LOW)
         pwm_ENA.ChangeDutyCycle(CarSpeedControl)
         pwm_ENB.ChangeDutyCycle(CarSpeedControl)
-
+        time.sleep(2)
     # 小车原地左转
     def spin_left(self):
         GPIO.output(IN1, GPIO.LOW)
@@ -397,14 +403,14 @@ class CarController:
         GPIO.output(IN4, GPIO.LOW)
     #加速
     def speedUp(self):
-        self.CarSpeedControl += 20
+        self.CarSpeedControl += 10
         if self.CarSpeedControl>=100:
             self.CarSpeedControl=100
     #减速
     def speedDown(self):
-        self.CarSpeedControl -= 20
-        if self.CarSpeedControl <=20:
-            self.CarSpeedControl = 20
+        self.CarSpeedControl -= 10
+        if self.CarSpeedControl <=0:
+            self.CarSpeedControl = 0
     def getSpeed(self):
         return self.CarSpeedControl
     # 摄像头舵机左右旋转到指定角度

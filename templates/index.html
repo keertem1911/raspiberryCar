@@ -4,22 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>遥控树莓派</title>
-    <link href="/static/css/bootstrap.min.css" rel="stylesheet" media="screen">
-    <script src="/static/js/jquery.min.js"></script>
-    <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=N9sye2GzSLFIxDHnyDl5cMsvpe7gcS8P"></script>
+    <link href="../static/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <script src="../static/js/jquery.min.js"></script>
+<!-- <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=N9sye2GzSLFIxDHnyDl5cMsvpe7gcS8P"></script>-->
 
     <style type="text/css">
-        #btn_87 {
+        #btn_87,#btn_38{
             margin-left: 55px;
             margin-bottom: 3px;
         }
-        #btn_68{
+        #btn_83,#btn_40{
             margin-top: 3px;
             margin-left: 55px;
         }
         .btn{
              background: #62559f;
             }
+        #btn_70{
+            margin-top: 8px;
+        }
+        #btn_39{
+            margin-left: 46px;
+        }
          /*设置容器样式*/
 		    #container {
 		    	height: 100%;
@@ -33,7 +39,7 @@
               var paused = false;
               var previous_time = new Date();
               var fNi = 0, msAvg = 0, fpsAvg = 0, fcnt = 0, fN = 80, msa = [], wsize = 4;
-              var prefix="/car",url="http://wangchuanxin.uicp.top:10279";
+              var prefix="/car",url="http://192.168.3.12";
 
             function runningAvgs(delta) {
                 // delta is the measured frame period
@@ -184,7 +190,7 @@
                      }
                 });
             });
-            function createBaiDuMap() {
+         /**   function createBaiDuMap() {
                 //创建地址实例
                 var map = new BMap.Map("container");
             //设置中心的坐标
@@ -229,9 +235,8 @@
                     else {
                         alert('failed'+this.getStatus());
                     }
-                });*/
-            }
-            createBaiDuMap()
+                });
+            }**/
         })
 
 
@@ -240,39 +245,60 @@
 <body   >
 <div   class="container">
 
-    <div>
-        <div>
-            <button id="btn_87" class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-up"></button>
-        </div>
-        <div>
-
-            <button id='btn_65' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-left"></button>
-            <button id='btn_32' class="btn btn-lg btn-primary glyphicon glyphicon-stop"></button>
-            <button id='btn_68' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-right"></button>
-        </div>
-        <div>
-            <button id='btn_83' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-down"></button>
-        </div>
-         <!--<div>
-            <button id='btn_6' class="btn btn-lg btn-primary glyphicon">左后转</button>
-            <button id='btn_7' class="btn btn-lg btn-primary glyphicon">右后转</button>
-        </div>-->
-    </div>
      <h3>Runtime info:</h3>
       <p><span id="info">-</span><br/>
       Avg<sub id="fN">-</sub> : <span  id="ravgms">-</span> ms (<span  id="ravgfps">-</span> fps)
 
       </p>
         <div class="row">
-        <div class="col-md-8">
-            <div id="webcam" style="margin-top:80px;width:512px;height:394px;"><noscript><img src="?action=snapshot" width="512px" height="384px" /></noscript></div>
+            <div class="col-md-8">
+                <div id="webcam" style="margin-top:80px;width:512px;height:394px;"><noscript><img src="?action=snapshot" width="512px" height="384px" /></noscript></div>
+            </div>
+            <div class="col-md-4">
+                <div class="controller-div" style="width:800px;">
+                        <div style="float: left;width:200px;" class="car_controller">
+                        <div>
+                            <button id="btn_87" class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-up"></button>
+                        </div>
+                        <div>
+
+                            <button id='btn_65' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-left"></button>
+                            <button id='btn_32' class="btn btn-lg btn-primary glyphicon glyphicon-stop"></button>
+                            <button id='btn_68' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-right"></button>
+                        </div>
+                        <div>
+                            <button id='btn_83' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-down"></button>
+                        </div>
+                         <!--<div>
+                            <button id='btn_6' class="btn btn-lg btn-primary glyphicon">左后转</button>
+                            <button id='btn_7' class="btn btn-lg btn-primary glyphicon">右后转</button>
+                        </div>-->
+                    </div>
+                        <div style="float: left;width:500px;" class="camera_controller">
+        <div>
+            <button id="btn_38" class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-up"></button>
         </div>
-        <div class="col-md-4">
-             <p>经度<span id="lng">-</span>纬度<span id="lat">-</span><br/>
-            <div id="container" style="margin-top:80px;width:580px;height:450px;"></div>
+        <div>
+
+            <button id='btn_37' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-left"></button>
+
+            <button id='btn_39' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-right"></button>
         </div>
+        <div>
+            <button id='btn_40' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-down"></button>
+        </div>
+         <!--<div>
+            <button id='btn_6' class="btn btn-lg btn-primary glyphicon">左后转</button>
+            <button id='btn_7' class="btn btn-lg btn-primary glyphicon">右后转</button>
+        </div>-->
+    </div>
+                </div>
+                <button id="btn_70" class="btn-danger btn-lg">鸣笛f</button>
+                <button id="btn_82" class="btn-danger btn-lg">截图r</button>
+                <button id="btn_84" class="btn-danger btn-lg">录屏t</button>
+            </div>
         </div>
 </div>
-<script src="/static/js/bootstrap.min.js"></script>
+<script src="../static/js/bootstrap.min.js"></script>
 </body>
 </html>
