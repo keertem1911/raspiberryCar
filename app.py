@@ -165,6 +165,8 @@ def controllerDist(dist):
         response=saveRecordVideo()
     elif dist ==70: #f
         car.whistle()
+    elif dist==76:
+        car.lightCar()
     return jsonify({'msg':response})
 def saveRecordVideo():
     state= thread.getState()
@@ -296,6 +298,10 @@ ENB = 13
 """
 小车方向控制函数
 """
+"""
+车灯 12 红外避障左	IN7	12
+"""
+lightPin=12
 #舵机引脚定义
 ServoUpDownPin = 9
 ServoLeftRightPin = 11
@@ -318,6 +324,7 @@ class CarController:
         global pwm_ENB
         # 初始化速度
         self.CarSpeedControl=10
+        self.lightOpen=False
         """
         初始化小车控制
         """
@@ -330,6 +337,7 @@ class CarController:
         GPIO.setup(ServoUpDownPin, GPIO.OUT)
         GPIO.setup(ServoLeftRightPin, GPIO.OUT)
         GPIO.setup(buzzer,GPIO.OUT,initial=GPIO.HIGH)
+        GPIO.setup(lightPin, GPIO.LOW,initial=GPIO.LOW)
         # 设置pwm引脚和频率为2000hz
         pwm_ENA = GPIO.PWM(ENA, 2000)
         pwm_ENB = GPIO.PWM(ENB, 2000)
@@ -343,6 +351,8 @@ class CarController:
         """
         初始化小车控制结束
         """
+    def getCarStatus(self):
+        return ("speend:%d,light:%s"%(CarSpeedControl,self.lightOpen))
 # 小车前进
     def run(self):
         GPIO.output(IN1, GPIO.HIGH)
@@ -365,14 +375,17 @@ class CarController:
 
     # 小车左转
     def left(self):
-        GPIO.output(IN1, GPIO.LOW)
+        GPIO.output(IN1, GPIO.HIGH)
         GPIO.output(IN2, GPIO.LOW)
         GPIO.output(IN3, GPIO.HIGH)
         GPIO.output(IN4, GPIO.LOW)
-        pwm_ENA.ChangeDutyCycle(CarSpeedControl)
+        leftSpeed=5
+        if CarSpeedControl-10>0:
+            leftSpeed=CarSpeedControl-10
+        pwm_ENA.ChangeDutyCycle(leftSpeed)
         pwm_ENB.ChangeDutyCycle(CarSpeedControl)
         time.sleep(1)
-		GPIO.output(IN1, GPIO.LOW)
+        GPIO.output(IN1, GPIO.LOW)
         GPIO.output(IN2, GPIO.LOW)
         GPIO.output(IN3, GPIO.LOW)
         GPIO.output(IN4, GPIO.LOW)
@@ -380,12 +393,15 @@ class CarController:
     def right(self):
         GPIO.output(IN1, GPIO.HIGH)
         GPIO.output(IN2, GPIO.LOW)
-        GPIO.output(IN3, GPIO.LOW)
+        GPIO.output(IN3, GPIO.HIGH)
         GPIO.output(IN4, GPIO.LOW)
+        rightSpeed = 5
+        if CarSpeedControl - 10 > 0:
+            rightSpeed = CarSpeedControl - 10
         pwm_ENA.ChangeDutyCycle(CarSpeedControl)
-        pwm_ENB.ChangeDutyCycle(CarSpeedControl)
+        pwm_ENB.ChangeDutyCycle(rightSpeed)
         time.sleep(2)
-		GPIO.output(IN1, GPIO.LOW)
+        GPIO.output(IN1, GPIO.LOW)
         GPIO.output(IN2, GPIO.LOW)
         GPIO.output(IN3, GPIO.LOW)
         GPIO.output(IN4, GPIO.LOW)
@@ -441,6 +457,13 @@ class CarController:
         time.sleep(0.1)
         GPIO.output(buzzer, GPIO.HIGH)
         time.sleep(0.001)
+    def lightCar(self):
+        if self.lightOpen:
+            GPIO.output(lightPin, GPIO.LOW)
+            self.lightOpen=False
+        else:
+            self.lightOpen=True
+            GPIO.output(lightPin, GPIO.HIGH)
     # 摄像头舵机向上运动
     def servo_up(self):
         global ServoUpDownPos
