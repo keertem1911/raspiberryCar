@@ -10,8 +10,6 @@ import pygame
 """
 引入gpio包
 """
-import RPi.GPIO as GPIO
-
 app=Flask(__name__)
 
 auth=HTTPBasicAuth()
@@ -167,6 +165,8 @@ def controllerDist(dist):
         car.whistle()
     elif dist==76:
         car.lightCar()
+    elif dict==110:
+        return jsonify({'speed':car.getCarSpeed()})
     return jsonify({'msg':response})
 def saveRecordVideo():
     state= thread.getState()
@@ -253,8 +253,16 @@ def turnStop():
     return 'not init car'
 def turnLeftBack():
     print("turn left back")
+    if car is not None:
+        car.leftBack()
+        return 'success'
+    return 'not init car'
 def turnRightBack():
     print("turn right back")
+    if car is not None:
+        car.rightBack()
+        return 'success'
+    return 'not init car'
 def turnLeftForward():
     if car is not None:
         car.spin_left()
@@ -271,274 +279,16 @@ def turnRightForward():
 @auth.login_required
 def home():
     return send_file("templates/index.html")
-
-
-
-
-"""
-GPIO控制端
-"""
-#状态值定义
-enSTOP = 0
-enRUN =1
-enBACK = 2
-enLEFT = 3
-enRIGHT = 4
-enTLEFT =5
-enTRIGHT = 6
-
-
-#小车电机引脚定义
-IN1 = 20
-IN2 = 21
-IN3 = 19
-IN4 = 26
-ENA = 16
-ENB = 13
-"""
-小车方向控制函数
-"""
-"""
-车灯 12 红外避障左	IN7	12
-"""
-lightPin=12
-#舵机引脚定义
-ServoUpDownPin = 9
-ServoLeftRightPin = 11
-
-ServoLeftRightPos = 0
-ServoUpDownPos = 0
-#蜂鸣器引脚定义
-buzzer = 8
-
-CarSpeedControl=10
-class CarController:
-    def __init__(self):
-        # 设置GPIO口为BCM编码方式
-        GPIO.setmode(GPIO.BCM)
-        global pwm_UpDownServo
-        global pwm_LeftRightServo
-        # 忽略警告信息
-        GPIO.setwarnings(False)
-        global pwm_ENA
-        global pwm_ENB
-        # 初始化速度
-        self.CarSpeedControl=10
-        self.lightOpen=False
-        """
-        初始化小车控制
-        """
-        GPIO.setup(ENA, GPIO.OUT, initial=GPIO.HIGH)
-        GPIO.setup(IN1, GPIO.OUT, initial=GPIO.LOW)
-        GPIO.setup(IN2, GPIO.OUT, initial=GPIO.LOW)
-        GPIO.setup(ENB, GPIO.OUT, initial=GPIO.HIGH)
-        GPIO.setup(IN3, GPIO.OUT, initial=GPIO.LOW)
-        GPIO.setup(IN4, GPIO.OUT, initial=GPIO.LOW)
-        GPIO.setup(ServoUpDownPin, GPIO.OUT)
-        GPIO.setup(ServoLeftRightPin, GPIO.OUT)
-        GPIO.setup(buzzer,GPIO.OUT,initial=GPIO.HIGH)
-        GPIO.setup(lightPin, GPIO.LOW,initial=GPIO.LOW)
-        # 设置pwm引脚和频率为2000hz
-        pwm_ENA = GPIO.PWM(ENA, 2000)
-        pwm_ENB = GPIO.PWM(ENB, 2000)
-        pwm_UpDownServo = GPIO.PWM(ServoUpDownPin, 50)
-        pwm_LeftRightServo = GPIO.PWM(ServoLeftRightPin, 50)
-        pwm_ENA.start(0)
-        pwm_ENB.start(0)
-        pwm_UpDownServo.start(0)
-        pwm_LeftRightServo.start(0)
-
-        """
-        初始化小车控制结束
-        """
-    def getCarStatus(self):
-        return ("speend:%d,light:%s"%(CarSpeedControl,self.lightOpen))
-# 小车前进
-    def run(self):
-        GPIO.output(IN1, GPIO.HIGH)
-        GPIO.output(IN2, GPIO.LOW)
-        GPIO.output(IN3, GPIO.HIGH)
-        GPIO.output(IN4, GPIO.LOW)
-        pwm_ENA.ChangeDutyCycle(CarSpeedControl)
-        pwm_ENB.ChangeDutyCycle(CarSpeedControl)
-        time.sleep(1)
-		 
-    # 小车后退
-    def back(self):
-        GPIO.output(IN1, GPIO.LOW)
-        GPIO.output(IN2, GPIO.HIGH)
-        GPIO.output(IN3, GPIO.LOW)
-        GPIO.output(IN4, GPIO.HIGH)
-        pwm_ENA.ChangeDutyCycle(CarSpeedControl)
-        pwm_ENB.ChangeDutyCycle(CarSpeedControl)
-        time.sleep(1)
-
-    # 小车左转
-    def left(self):
-        GPIO.output(IN1, GPIO.HIGH)
-        GPIO.output(IN2, GPIO.LOW)
-        GPIO.output(IN3, GPIO.HIGH)
-        GPIO.output(IN4, GPIO.LOW)
-        leftSpeed=5
-        if CarSpeedControl-10>0:
-            leftSpeed=CarSpeedControl-10
-        pwm_ENA.ChangeDutyCycle(leftSpeed)
-        pwm_ENB.ChangeDutyCycle(CarSpeedControl)
-        time.sleep(1)
-        GPIO.output(IN1, GPIO.LOW)
-        GPIO.output(IN2, GPIO.LOW)
-        GPIO.output(IN3, GPIO.LOW)
-        GPIO.output(IN4, GPIO.LOW)
-    # 小车右转
-    def right(self):
-        GPIO.output(IN1, GPIO.HIGH)
-        GPIO.output(IN2, GPIO.LOW)
-        GPIO.output(IN3, GPIO.HIGH)
-        GPIO.output(IN4, GPIO.LOW)
-        rightSpeed = 5
-        if CarSpeedControl - 10 > 0:
-            rightSpeed = CarSpeedControl - 10
-        pwm_ENA.ChangeDutyCycle(CarSpeedControl)
-        pwm_ENB.ChangeDutyCycle(rightSpeed)
-        time.sleep(2)
-        GPIO.output(IN1, GPIO.LOW)
-        GPIO.output(IN2, GPIO.LOW)
-        GPIO.output(IN3, GPIO.LOW)
-        GPIO.output(IN4, GPIO.LOW)
-    # 小车原地左转
-    def spin_left(self):
-        GPIO.output(IN1, GPIO.LOW)
-        GPIO.output(IN2, GPIO.HIGH)
-        GPIO.output(IN3, GPIO.HIGH)
-        GPIO.output(IN4, GPIO.LOW)
-        pwm_ENA.ChangeDutyCycle(CarSpeedControl)
-        pwm_ENB.ChangeDutyCycle(CarSpeedControl)
-
-    # 小车原地右转
-    def spin_right(self):
-        GPIO.output(IN1, GPIO.HIGH)
-        GPIO.output(IN2, GPIO.LOW)
-        GPIO.output(IN3, GPIO.LOW)
-        GPIO.output(IN4, GPIO.HIGH)
-        pwm_ENA.ChangeDutyCycle(CarSpeedControl)
-        pwm_ENB.ChangeDutyCycle(CarSpeedControl)
-    # 小车停止
-    def brake(self):
-        GPIO.output(IN1, GPIO.LOW)
-        GPIO.output(IN2, GPIO.LOW)
-        GPIO.output(IN3, GPIO.LOW)
-        GPIO.output(IN4, GPIO.LOW)
-    #加速
-    def speedUp(self):
-        self.CarSpeedControl += 10
-        if self.CarSpeedControl>=100:
-            self.CarSpeedControl=100
-    #减速
-    def speedDown(self):
-        self.CarSpeedControl -= 10
-        if self.CarSpeedControl <=0:
-            self.CarSpeedControl = 0
-    def getSpeed(self):
-        return self.CarSpeedControl
-    # 摄像头舵机左右旋转到指定角度
-    def leftrightservo_appointed_detection(self,pos):
-        pwm_LeftRightServo.ChangeDutyCycle(2.5 + 10 * pos / 180)
-        time.sleep(0.02)  # 等待20ms周期结束
-        pwm_LeftRightServo.ChangeDutyCycle(0)	#归零信号
-
-    # 摄像头舵机上下旋转到指定角度
-    def updownservo_appointed_detection(self,pos):
-        pwm_UpDownServo.ChangeDutyCycle(2.5 + 10 * pos / 180)
-        time.sleep(0.02)  # 等待20ms周期结束
-        pwm_UpDownServo.ChangeDutyCycle(0)	#归零信号
-    # 小车鸣笛
-    def whistle(self):
-        GPIO.output(buzzer, GPIO.LOW)
-        time.sleep(0.1)
-        GPIO.output(buzzer, GPIO.HIGH)
-        time.sleep(0.001)
-    def lightCar(self):
-        if self.lightOpen:
-            GPIO.output(lightPin, GPIO.LOW)
-            self.lightOpen=False
-        else:
-            self.lightOpen=True
-            GPIO.output(lightPin, GPIO.HIGH)
-    # 摄像头舵机向上运动
-    def servo_up(self):
-        global ServoUpDownPos
-        pos = ServoUpDownPos
-        self.updownservo_appointed_detection(pos)
-        # time.sleep(0.05)
-        pos += 0.7
-        ServoUpDownPos = pos
-        if ServoUpDownPos >= 180:
-            ServoUpDownPos = 180
-    # 摄像头舵机向下运动
-    def servo_down(self):
-        global ServoUpDownPos
-        pos = ServoUpDownPos
-        self.updownservo_appointed_detection(pos)
-        # time.sleep(0.05)
-        pos -= 0.7
-        ServoUpDownPos = pos
-        if ServoUpDownPos <= 45:
-            ServoUpDownPos = 45
-    # 摄像头舵机向左运动
-    def servo_left(self):
-        global ServoLeftRightPos
-        pos = ServoLeftRightPos
-        self.leftrightservo_appointed_detection(pos)
-        # time.sleep(0.10)
-        pos += 0.7
-        ServoLeftRightPos = pos
-        if ServoLeftRightPos >= 180:
-            ServoLeftRightPos = 180
-    # 摄像头舵机向右运动
-    def servo_right(self):
-        global ServoLeftRightPos
-        pos = ServoLeftRightPos
-        self.leftrightservo_appointed_detection(pos)
-        # time.sleep(0.10)
-        pos -= 0.7
-        ServoLeftRightPos = pos
-        if ServoLeftRightPos <= 0:
-            ServoLeftRightPos = 0
-    # 前舵机向左
-    def front_servo_left(self):
-        self.frontservo_appointed_detection(180)
-    # 前舵机向右
-    def front_servo_right(self):
-        self.frontservo_appointed_detection(0)
-    # 所有舵机归位
-    def servo_init(self):
-        servoflag = 0
-        servoinitpos = 90
-        if servoflag != servoinitpos:
-            self.updownservo_appointed_detection(servoinitpos)
-            self.leftrightservo_appointed_detection(servoinitpos)
-            time.sleep(0.5)
-            pwm_LeftRightServo.ChangeDutyCycle(0)  # 归零信号
-            pwm_UpDownServo.ChangeDutyCycle(0)  # 归零信号
-    # 摄像头舵机上下归位
-    def servo_updown_init(self):
-        self.updownservo_appointed_detection(90)
-    # 舵机停止
-    def servo_stop(self):
-        pwm_LeftRightServo.ChangeDutyCycle(0)  # 归零信号
-        pwm_UpDownServo.ChangeDutyCycle(0)  # 归零信号
-
-
 """
 小车方向控制函数
 """
 """二度云台控制"""
-
+from gpioCar import CarController
 if __name__ == '__main__':
     thread = saveVideoClass(hoststr)
     car= CarController()
     app.run(
-        host="192.168.3.12",
+        host=host,
         port=8081,
         debug=False
     )
