@@ -112,6 +112,15 @@
                 $.get(prefix+"/controller/"+id, function (data, status) {
                 });
             });
+            function getSpeed() {
+
+                $.get(prefix+"/controller/110", function (data, status) {
+                    if(data){
+                        $("#carspeed").val(data.speed)
+                    }
+                });
+
+            }
             function createImageLayer() {
                   var img = new Image();
             img.style.position = "absolute";
@@ -248,6 +257,7 @@
      <h3>Runtime info:</h3>
       <p><span id="info">-</span><br/>
       Avg<sub id="fN">-</sub> : <span  id="ravgms">-</span> ms (<span  id="ravgfps">-</span> fps)
+          <span id="carspeed"></span>
 
       </p>
         <div class="row">
@@ -261,13 +271,14 @@
                             <button id="btn_87" class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-up"></button>
                         </div>
                         <div>
-
                             <button id='btn_65' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-left"></button>
                             <button id='btn_32' class="btn btn-lg btn-primary glyphicon glyphicon-stop"></button>
                             <button id='btn_68' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-right"></button>
                         </div>
                         <div>
+                            <button id='btn_90' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-left"></button>
                             <button id='btn_83' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-down"></button>
+                            <button id='btn_67' class="btn btn-lg btn-primary glyphicon glyphicon-circle-arrow-right"></button>
                         </div>
                          <!--<div>
                             <button id='btn_6' class="btn btn-lg btn-primary glyphicon">左后转</button>
@@ -297,6 +308,8 @@
                 <button id="btn_82" class="btn-danger btn-lg">截图r</button>
                 <button id="btn_84" class="btn-danger btn-lg">录屏t</button>
                 <button id="btn_76" class="btn-danger btn-lg">开灯L</button>
+                <button id="btn_16" class="btn-danger btn-lg">加速</button>
+                <button id="btn_20" class="btn-danger btn-lg">减速</button>
             </div>
         </div>
 </div>
